@@ -35,3 +35,54 @@ $('#search').addEventListener('input',e=>{searchTerm=e.target.value.trim().toLow
 (async()=>{try{db=await openDB();tracks=await allTracks();render();updatePlayer()}catch(err){console.error(err);$('#content').innerHTML='<div class="empty"><h3>Browser storage unavailable</h3><p>Please use a modern browser with local storage enabled, and access the app through localhost.</p></div>'}})();
 
 if('serviceWorker' in navigator && location.protocol!=='file:')window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+// L6 Music: online catalogue
+const onlineSongs = [
+  {
+    id: 'l6-online-001',
+    title: 'The Phone Was Already In My',
+    artist: 'Lenze26',
+    genre: 'Hip-Hop',
+    created: Date.now(),
+    color: 0,
+    audioUrl: 'https://l6music.github.io/l6-music/The%20Phone%20Was%20Already%20In%20My.mp3',
+    art: null
+  }
+];
+
+// Support both browser files and online songs.
+const originalPlay = play;
+
+play = function(id) {
+  const song = tracks.find(t => t.id === id);
+
+  if (song && song.audioUrl) {
+    if (objectUrl) {
+      URL.revokeObjectURL(objectUrl);
+      objectUrl = null;
+    }
+
+    audio.src = song.audioUrl;
+    current = id;
+
+    audio.play().catch(() => toast('Unable to play this song'));
+    updatePlayer();
+    return;
+  }
+
+  originalPlay(id);
+};
+
+// Load online songs into the catalogue.
+(async function loadOnlineSongs() {
+  while (!db) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  tracks = [
+    ...onlineSongs,
+    ...tracks.filter(t => !onlineSongs.some(s => s.id === t.id))
+  ];
+
+  render();
+  updatePlayer();
+})();

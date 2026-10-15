@@ -34,3 +34,4 @@ If port 8000 is taken, use `python3 -m http.server 8080` and open http://localho
 ## Next development milestone
 
 Replace local IndexedDB uploads with authenticated accounts and a backend (for example Supabase Postgres/Auth and an object storage/CDN service). Implement per-artist access controls, validated upload endpoints, copyright reporting and takedown workflow, moderation, and secure streaming delivery. Build and test before public deployment.
+L6 music deployment update 

@@ -44,7 +44,8 @@ function headers(token){return {'apikey':CLOUD.anonKey,...(token?{'Authorization
 async function cloudRequest(path,options={}){
  const r=await fetch(endpoint(path),{...options,headers:{...headers(cloudSession?.access_token),...(options.headers||{})}});
  if(!r.ok)throw Error((await r.text()).slice(0,250));
- return r.status===204?null:r.json();
+ const responseText=await r.text();
+ return responseText?JSON.parse(responseText):null;
 }
 async function refreshCloud(){
  if(!cloudEnabled)return;
@@ -74,14 +75,14 @@ async function publishCloud(form){
  const id=crypto.randomUUID(),prefix=cloudSession.user.id+'/'+id+'/';
  const ext=(f)=>f.name.split('.').pop().toLowerCase();
  const audioPath=prefix+'audio.'+ext(audioFile),artPath=art?prefix+'cover.'+ext(art):null;
- await uploadObject(audioPath,audioFile);
- if(art)await uploadObject(artPath,art);
- await cloudRequest('/rest/v1/tracks',{method:'POST',
+ try{await uploadObject(audioPath,audioFile)}catch(err){throw Error('Audio upload: '+err.message)}
+ if(art)try{await uploadObject(artPath,art)}catch(err){throw Error('Artwork upload: '+err.message)}
+ try{await cloudRequest('/rest/v1/tracks',{method:'POST',
  headers:{'Content-Type':'application/json','Prefer':'return=minimal'},
  body:JSON.stringify({id,owner_id:cloudSession.user.id,title:form.elements.namedItem('title').value.trim(),
  artist:form.elements.namedItem('artist').value.trim(),genre:form.elements.namedItem('genre').value,
- audio_path:audioPath,art_path:artPath})});
- await refreshCloud();
+ audio_path:audioPath,art_path:artPath})})}catch(err){throw Error('Saving song details: '+err.message)}
+ try{await refreshCloud()}catch(err){console.error('Published successfully; catalogue refresh failed',err);toast('Song saved to cloud. Refresh the page to see it.')}
 }
 document.addEventListener('submit',async e=>{
  if(e.target.id==='cloudLogin'){
